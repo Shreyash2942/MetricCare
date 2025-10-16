@@ -1,0 +1,65 @@
+{
+  "job_bronze_condition_hudi": {
+    "input_path": "fhir_data/json/conditions/",
+    "output_path": "database/bronzetable/conditions",
+    "log_path": "database/log_tables/bronze_condition_logs",
+    "table": "bronze_condition",
+    "log_table":"bronze_condition_log"
+  },
+  "job_bronze_encounter_hudi": {
+    "input_path": "fhir_data/json/encounters/",
+    "output_path": "database/bronzetable/encounters",
+    "log_path": "database/log_tables/bronze_encounter_logs",
+    "table": "bronze_encounter",
+    "log_table":"bronze_encounter_log"
+  },
+  "job_bronze_patient_hudi": {
+    "input_path": "fhir_data/json/patients/",
+    "output_path": "database/bronzetable/patients",
+    "log_path": "database/log_tables/bronze_patient_logs",
+    "table": "bronze_patients",
+    "log_table":"bronze_patient_log"
+  },
+  "job_silver_condition": {
+    "input_path": "fhir_data/json/conditions/",
+    "output_path": "database/silvertable/conditions",
+    "log_path": "database/log_tables/silver_condition_logs",
+    "table": "silver_condition",
+    "log_table":"silver_condition_log"
+  },
+  "job_silver_encounter": {
+    "input_path": "fhir_data/json/encounters/",
+    "output_path": "database/silvertable/encounters",
+    "log_path": "database/log_tables/silver_encounter_logs",
+    "table": "silver_encounter",
+    "log_table":"silver_encounter_log"
+  },
+  "job_silver_patient": {
+    "input_path": "fhir_data/json/patients/",
+    "output_path": "database/silvertable/patients",
+    "log_path": "database/log_tables/silver_patient_logs",
+    "table": "silver_patients",
+    "log_table":"silver_patient_log"
+  },
+  "job_gold_infection_rate":{
+    "input_path": "",
+    "output_path": "database/gold_table/infection_rate",
+    "log_path": "database/log_tables/gold_infection_rate",
+    "table": "gold_infection_rate",
+    "log_table": "gold_infection_log"
+  },
+  "job_gold_mortality_rate":{
+    "input_path": "",
+    "output_path": "database/gold_table/mortality_rate",
+    "log_path": "database/log_tables/gold_mortality_rate",
+    "table": "gold_mortality_rate",
+    "log_table": "gold_mortality_rate_log"
+  },
+  "job_gold_readmission_rate":{
+    "input_path": "",
+    "output_path": "database/gold_table/readmission_rate",
+    "log_path": "database/log_tables/gold_readmission_rate",
+    "table": "gold_readmission_rate",
+    "log_table": "gold_readmission_rate_log"
+  }
+}
