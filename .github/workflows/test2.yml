@@ -1,0 +1,12 @@
+name: Manual check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  echo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show ref
+        run: |
+          echo "Ref is $GITHUB_REF"

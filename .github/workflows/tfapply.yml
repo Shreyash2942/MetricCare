@@ -1,0 +1,60 @@
+name: Terraform Apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      workspace:
+        description: 'Terraform workspace to use'
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - qa
+          - prod
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    environment: aws
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      #checking which bracnh is running
+      - name: Cheking which branch is runnging
+        run: echo "Running on branch :-> $GITHUB_REF_NAME"
+
+      # 2. Configure AWS credentials (reads from GitHub Secrets)
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.3
+
+      - name: Terraform Init
+        run: terraform init -input=false -migrate-state
+        working-directory: ./Terraform
+
+      - name: Select Workspace
+        working-directory: ./Terraform
+        run: |
+          terraform workspace select ${{ github.event.inputs.workspace }} || terraform workspace new ${{ github.event.inputs.workspace }}
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+        working-directory: ./Terraform
+
+
+      # apply
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
+        working-directory: ./Terraform
