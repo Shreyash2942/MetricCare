@@ -1,0 +1,30 @@
+# Ignore all .pyc files
+*.pyc
+**/*.env
+
+# Ignore all __pycache__ folders recursively
+*__pycache__/
+
+# Ignore my_testing folders and their contents
+my_testing/
+
+#ignoring local json files
+ingestion/script/fhir_data/
+
+#aws credentials in terraform
+terraform/.terraform
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/awscredentials
+
+terraform/.terraform_env
+
+*.idea
+
+
+
+
+
+
+
