@@ -1,7 +1,10 @@
-# 🏗️ MetricCare Terraform Module
+# 🏗️ MetricCare Terraform Infrastructure
 
-This directory provisions all **AWS infrastructure** for the MetricCare Data Lakehouse using **Terraform**.  
-It connects with the `lambda/` and `glue_job/` folders at the project root to automate the deployment of data and compute resources.
+This directory provisions the **AWS Data Lakehouse infrastructure** for the MetricCare project using **Terraform**.  
+It automates the creation of compute, storage, and orchestration layers used across:
+- `lambda/` → Event-driven Glue triggers  
+- `glue_job/` → ETL transformations (Bronze → Silver → Gold)  
+- `fhir_data/` → Synthetic FHIR datasets used for CMS metrics  
 
 ---
 
@@ -9,128 +12,135 @@ It connects with the `lambda/` and `glue_job/` folders at the project root to au
 
 | Component | AWS Service | Purpose |
 |------------|--------------|----------|
-| 🪣 **S3 Buckets** | Amazon S3 | Stores raw → bronze → silver → gold FHIR data |
-| ⚙️ **Glue Jobs & Workflow** | AWS Glue | ETL orchestration for CMS metrics |
-| 🧠 **DynamoDB Table** | DynamoDB | Tracks processed files for incremental ingestion |
-| 🧩 **Lambda Function** | AWS Lambda | Triggers Glue Workflow when new data lands in S3 |
-| 🔔 **SNS + EventBridge** | AWS SNS/EventBridge | Alerts for job success/failure |
-| 🔐 **IAM Roles & Policies** | AWS IAM | Grants permissions for all components |
+| 🪣 **S3 Buckets** | Amazon S3 | Stores raw → bronze → silver → gold FHIR datasets |
+| ⚙️ **Glue Jobs & Workflow** | AWS Glue | Runs ETL pipelines and manages job dependencies |
+| 🧠 **DynamoDB Table** | Amazon DynamoDB | Tracks processed files for incremental ingestion |
+| 🧩 **Lambda Function** | AWS Lambda | Triggers Glue Workflow on new S3 data arrival |
+| 🔔 **SNS + EventBridge** | AWS SNS / EventBridge | Notification and orchestration for job events |
+| 🔐 **IAM Roles & Policies** | AWS IAM | Grants least-privilege access to each service |
 
 ---
 
-## 🗂️ Project Structure
-
-At the project root:
-
-```
-MetricCare/
-├── terraform/         # Infrastructure as Code (this folder)
-├── lambda/            # Contains myglueworkflow.py (trigger Lambda)
-├── glue_job/          # Bronze/Silver/Gold Glue ETL scripts
-├── fhir_data/         # FHIR patient/encounter/condition generators
-├── docs/              # Architecture and implementation docs
-└── README.md          # Main project overview
-```
-
-Inside the Terraform module:
-
-```
-terraform/
-├── main.tf
-├── backend.tf
-├── provider.tf
-├── variables.tf
-├── output.tf
-│
-├── module/
-│   ├── s3/
-│   ├── glue/
-│   ├── lambda_function/
-│   ├── dynemoDB/
-│   ├── event_bridge/
-│   └── aws_sns/
-│
-└── awscredentials/credentials   # ⚠️ For local runs only — exclude from Git
-```
-
----
-
-## ⚙️ How It Works
-
-1. **Lambda** (`../lambda/myglueworkflow.py`) is zipped and deployed via Terraform.
-2. **S3** buckets and **DynamoDB** table are created for data storage and tracking.
-3. **Glue modules** provision catalog, jobs, and workflows.
-4. **SNS/EventBridge** handle notifications on job success or failure.
-5. **Workspaces** manage `dev`, `prod`, etc., automatically.
-
----
-
-## 🚀 Deployment with Workspaces
+## 🗂️ Terraform Project Structure
 
 ```bash
-cd terraform
-terraform init
+terraform/
+│
+├── backend.tf                # Defines remote backend (S3 + DynamoDB) for Terraform state
+├── main.tf                   # Root module calling all submodules (S3, Glue, Lambda, etc.)
+├── provider.tf               # AWS provider configuration and version locking
+├── variables.tf              # Shared variable definitions for all modules
+├── terraform.tfstate         # Local state file (only if remote backend not configured)
+├── terraform.tfstate.backup  # Local backup of the state file
+├── README.md                 # This documentation file
+│
+├── awscredentials/
+│   └── credentials            # Stores AWS CLI credentials (for local dev use only)
+│
+└── module/
+    ├── aws_sns/               # Creates SNS topics/subscriptions for notifications
+    ├── dynemoDB/              # Creates DynamoDB table for processed_files metadata
+    ├── event_bridge/          # Defines EventBridge rules for workflow scheduling
+    ├── glue/
+    │   ├── glue_catalog_database/   # Creates Glue databases for bronze/silver/gold tables
+    │   ├── glue_job/                # Deploys ETL Glue Jobs (PySpark scripts)
+    │   └── glue_workflow/           # Creates Glue Workflows + triggers between jobs
+    ├── lambda_function/      # Deploys Lambda for workflow orchestration
+    └── s3/
+        ├── s3_bucket/        # Creates data lake buckets (raw → bronze → silver → gold)
+        ├── upload_files/     # Uploads config/data files to S3 during provisioning
+        └── upload_scripts/   # Uploads Lambda & Glue scripts to corresponding S3 paths
+```
 
-# create/select environment
+---
+
+## 🚀 Deploying with Terraform Workspaces
+
+This project uses **Terraform Workspaces** to manage environments (e.g., `dev`, `prod`).
+
+```bash
+terraform init
 terraform workspace new dev
 terraform workspace select dev
-
-# plan & apply
 terraform plan
 terraform apply -auto-approve
+```
 
-# (optional) destroy
+> 🧩 Each workspace maintains isolated state, allowing you to deploy multiple environments using the same Terraform codebase.
+
+---
+
+## 🧩 Running or Destroying Specific Modules
+
+You can apply or destroy **individual modules** instead of the entire stack.
+
+### ▶️ Apply a Specific Module
+```bash
+terraform apply -target=module.lambda_function -auto-approve
+```
+
+### 💣 Destroy a Specific Module
+```bash
+terraform destroy -target=module.lambda_function -auto-approve
+```
+
+> ⚠️ Use targeted commands for testing only. For production, always run full `plan/apply` for dependency consistency.
+
+---
+
+## 💥 Destroying the Entire Infrastructure
+
+To remove **all resources** in the current workspace:
+
+```bash
 terraform destroy -auto-approve
 ```
 
-Each workspace maintains isolated backend state (S3 + DynamoDB).
-
----
-
-## 🪄 Lambda Packaging
-
-Before running `terraform apply`, zip your Lambda trigger:
+If managing multiple environments:
 
 ```bash
-cd ../lambda
-zip -r ../terraform/module/lambda_function/myglueworkflow.zip myglueworkflow.py
+terraform workspace select dev
+terraform destroy -auto-approve
 ```
 
-Terraform automatically uploads it to AWS Lambda.
+> 🧹 This ensures a clean teardown of all resources in that workspace while preserving remote state in S3/DynamoDB.
 
 ---
 
-## 📤 Outputs
+## 🧠 Design Principles
 
-| Output | Description |
-|---------|-------------|
-| `bucket_name` | Main data bucket |
-| `workflow_name` | Glue Workflow name |
-| `lambda_arn` | ARN of deployed Lambda |
-| `config_file_path` | S3 path to uploaded config JSON |
-
----
-
-## 🧰 Requirements
-
-| Tool | Minimum Version |
-|-------|-----------------|
-| Terraform | ≥ 1.6.0 |
-| AWS CLI | ≥ 2.15 |
-| Python | ≥ 3.12 |
-| Boto3 | Built into Lambda runtime |
+- **Modular Architecture:** Each AWS service lives in an independent module.  
+- **Workspace Isolation:** Environments (`dev`, `prod`) use workspaces instead of `.tfvars`.  
+- **Least-Privilege IAM:** Policies grant only necessary permissions.  
+- **Version Locking:** AWS provider pinned to `~> 6.12.0`.  
+- **Automation-Ready:** EventBridge + Lambda enable serverless orchestration.  
+- **State Safety:** Remote backend protects against conflicting deployments.  
 
 ---
 
-## 🧩 Notes
+## 🔗 Additional Resources
 
-- All sensitive credentials in `terraform/awscredentials/` should be **excluded from Git**:
-  ```bash
-  echo "terraform/awscredentials/" >> .gitignore
-  ```
-- The main project `README.md` should describe how Terraform integrates with Lambda and Glue jobs.
+### 🧰 Terraform
+- [Terraform Downloads](https://developer.hashicorp.com/terraform/downloads)  
+- [Terraform CLI Documentation](https://developer.hashicorp.com/terraform/cli)  
+- [Terraform AWS Provider Reference](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)  
+- [Terraform Remote State (S3 Backend)](https://developer.hashicorp.com/terraform/language/settings/backends/s3)  
+
+### ☁️ AWS CLI & Configuration
+- [AWS CLI Installation Guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)  
+- [AWS CLI Configuration Files](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)  
+- [AWS IAM User Guide](https://docs.aws.amazon.com/IAM/latest/UserGuide/introduction.html)  
+
+### 🧩 AWS Service Docs
+- [AWS Glue Documentation](https://docs.aws.amazon.com/glue/)  
+- [AWS Lambda Documentation](https://docs.aws.amazon.com/lambda/)  
+- [Amazon EventBridge Documentation](https://docs.aws.amazon.com/eventbridge/)  
+- [AWS SNS Documentation](https://docs.aws.amazon.com/sns/)  
+- [Amazon DynamoDB Documentation](https://docs.aws.amazon.com/dynamodb/)  
+- [Amazon S3 Documentation](https://docs.aws.amazon.com/s3/)
 
 ---
 
-**Author:** MetricCare Data Engineering Team  
-**Purpose:** Automate infrastructure provisioning for AWS-based CMS metrics pipeline.
+> 🧱 **Author:** Shreyash (Data Engineer)  
+> 📚 *MetricCare – AWS Data Lakehouse for Healthcare Analytics*  
+> 🔗 *Built with Terraform, AWS Glue, Lambda, S3, DynamoDB, EventBridge, and SNS*
