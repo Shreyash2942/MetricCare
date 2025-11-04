@@ -96,6 +96,9 @@ It supports data-driven decision-making with real-time KPIs and alerts — ensur
 
 ![AWS Architecture Diagram](https://github.com/Shreyash2942/MetricCare/raw/decf09d175e17ebb5de2207a2666379bbaa51dd9/Documents/MetricCare_AWS_architectures.gif)
 
+## 2
+[Preview the HTML page on GitHub Pages](https://github.com/Shreyash2942/MetricCare/blob/main/Documents/MetricCare.html)
+
 
 
 ---
