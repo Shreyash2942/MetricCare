@@ -93,6 +93,7 @@ It supports data-driven decision-making with real-time KPIs and alerts — ensur
 ```
 ---
 ## another Diagram
+(https://github.com/Shreyash2942/MetricCare/blob/main/Documents/MetricCare_AWS_architectures.gif)
 <iframe src="Documents/MetricCare.html" width="100%" height="600px"></iframe>
 ![Diagrame](https://github.com/Shreyash2942/MetricCare/blob/main/Documents/MetricCare.html)
 ![MetricCare_AWS_architectures](https://github.com/user-attachments/assets/bc41ba1b-774a-4c32-b719-64f9cf6e1c8f)
