@@ -97,6 +97,11 @@ Power BI dashboard includes:
 - Overall CMS compliance summary
 
 ---
+## PowerBi Dashboard
+
+![Dashboard](https://github.com/Shreyash2942/MetricCare/blob/main/Documents/Metric_Care_powerBi_dashboard.png)
+
+---
 
 ## 📜 Success Criteria
 
